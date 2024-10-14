@@ -1,5 +1,8 @@
 "use client";
 
+import { useRef, useState } from "react";
+import { toast, Toaster } from "react-hot-toast";
+import { createBooking } from "@/lib/actions/createBooking.action";
 import { SubmitButton } from "./SubmitButton";
 import { Input, InputProps } from "./Input";
 import { CreateBookingFormDto } from "@/lib/types/booking.type";
@@ -67,15 +70,50 @@ const formFields: Record<keyof CreateBookingFormDto, InputProps> = {
 };
 
 export const BookingForm = () => {
+  const [serverActionResult, setServerActionResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
+
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const handleCreateBooking = async (formData: FormData) => {
+    const result = await createBooking(formData);
+    setServerActionResult(result);
+    if (result.success) {
+      // Show success toast
+      toast.success(result.message);
+      // Reset the form
+      formRef?.current?.reset();
+    } else {
+      // Show error toast
+      toast.error(result.message);
+    }
+  };
   return (
     <>
-      <form className="mx-auto mt-16 max-w-xl sm:mt-20">
+      <Toaster />
+      <form
+        ref={formRef}
+        action={handleCreateBooking}
+        className="mx-auto mt-16 max-w-xl sm:mt-20"
+      >
         <div className="grid grid-cols-1 gap-y-6">
           {/* Render fields */}
           {Object.values(formFields).map((field) => (
             <Input key={field.name} {...field} />
           ))}
         </div>
+        {/* Display Success or Error Message */}
+        {serverActionResult && (
+          <p
+            className={`mt-4 text-sm ${
+              serverActionResult.success ? "text-green-600" : "text-red-600"
+            }`}
+          >
+            {serverActionResult.message}
+          </p>
+        )}
 
         {/* Submit Button */}
         <div className="mt-10">
